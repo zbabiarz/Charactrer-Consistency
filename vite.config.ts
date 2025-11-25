@@ -8,6 +8,8 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        // @ts-ignore
+        allowedHosts: process.env.TEMPO === "true" ? true : undefined
       },
       plugins: [react()],
       define: {
@@ -18,6 +20,9 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        chunkSizeWarningLimit: 1000,
       }
     };
 });

@@ -1,5 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
+import { Auth } from './components/Auth';
+import { Session } from '@supabase/supabase-js';
 import { AppState, AppStep, INITIAL_STATE, Character, Placement } from './types';
 import { StepIndicator } from './components/StepIndicator';
 import { CharacterUploader } from './components/CharacterUploader';
@@ -11,7 +14,35 @@ import { generateComposite, upscaleImage } from './services/geminiService';
 import { ArrowLeft, Download, RefreshCw, Sparkles, Check } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [session, setSession] = useState<Session | null>(null);
   const [state, setState] = useState<AppState>(INITIAL_STATE);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const saveGeneration = async (imageData: string, prompt: string) => {
+    if (!session?.user) return;
+    try {
+      await supabase.from('generations').insert({
+        user_id: session.user.id,
+        image_data: imageData,
+        prompt: prompt
+      });
+    } catch (error) {
+      console.error('Error saving generation:', error);
+    }
+  };
   
   // Local state for regeneration inputs in the Result view
   const [regenPrompt, setRegenPrompt] = useState("");
@@ -130,6 +161,11 @@ const App: React.FC = () => {
       try {
         const resultImages = await generateComposite(state.characters, cleanBg, layoutGuide, placements, 1, "");
         updateState({ generatedImages: resultImages, step: AppStep.RESULT });
+        
+        // Save the first generated image
+        if (resultImages.length > 0) {
+          saveGeneration(resultImages[0], "Initial Composite Generation");
+        }
       } catch (err: any) {
         updateState({ error: err.message });
       } finally {
@@ -157,6 +193,11 @@ const App: React.FC = () => {
             regenPrompt
         );
         updateState({ generatedImages: resultImages, selectedImageIndex: 0 });
+
+        // Save generated images
+        resultImages.forEach(img => {
+            saveGeneration(img, regenPrompt || "Regeneration");
+        });
     } catch(err: any) {
         updateState({ error: err.message });
     } finally {
@@ -189,6 +230,10 @@ const App: React.FC = () => {
     }
   };
 
+  if (!session) {
+    return <Auth />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-50 flex flex-col">
       {state.isProcessing && <LoadingOverlay />}
@@ -205,15 +250,28 @@ const App: React.FC = () => {
             </h1>
           </div>
           {state.step > AppStep.UPLOAD_CHARACTER && (
-            <button onClick={resetApp} className="text-xs text-slate-500 hover:text-white transition-colors">
-              Reset Project
-            </button>
+            <div className="flex items-center gap-4">
+              <button onClick={resetApp} className="text-xs text-slate-500 hover:text-white transition-colors">
+                Reset Project
+              </button>
+              <button onClick={() => supabase.auth.signOut()} className="text-xs text-slate-500 hover:text-white transition-colors">
+                Sign Out
+              </button>
+            </div>
+          )}
+          {state.step === AppStep.UPLOAD_CHARACTER && (
+             <button onClick={() => supabase.auth.signOut()} className="text-xs text-slate-500 hover:text-white transition-colors">
+                Sign Out
+             </button>
           )}
         </div>
       </header>
 
       <main className="flex-1 flex flex-col">
-        <StepIndicator currentStep={state.step} />
+        <StepIndicator 
+          currentStep={state.step} 
+          onStepChange={(step) => updateState({ step })}
+        />
 
         <div className="flex-1 px-4 py-6 w-full max-w-7xl mx-auto animate-in fade-in duration-500">
           
