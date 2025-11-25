@@ -5,9 +5,10 @@ import { User, Image as ImageIcon, Move, CheckCircle } from 'lucide-react';
 
 interface StepIndicatorProps {
   currentStep: AppStep;
+  onStepClick: (step: AppStep) => void;
 }
 
-export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
+export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onStepClick }) => {
   const steps = [
     { id: AppStep.UPLOAD_CHARACTER, label: 'Characters', icon: User },
     { id: AppStep.BACKGROUND_SETUP, label: 'Background', icon: ImageIcon },
@@ -30,12 +31,19 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => 
           const isCurrent = currentStep === step.id;
           const Icon = step.icon;
           
+          const isClickable = step.id < currentStep;
+          
           return (
-            <div key={step.id} className="flex flex-col items-center gap-2">
+            <div 
+              key={step.id} 
+              className={`flex flex-col items-center gap-2 ${isClickable ? 'cursor-pointer group' : ''}`}
+              onClick={() => isClickable && onStepClick(step.id)}
+            >
               <div 
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-2 
                   ${isActive ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-900 border-slate-700 text-slate-500'}
                   ${isCurrent ? 'ring-4 ring-indigo-500/30 scale-110' : ''}
+                  ${isClickable ? 'group-hover:ring-4 group-hover:ring-indigo-500/20' : ''}
                 `}
               >
                 <Icon size={18} />

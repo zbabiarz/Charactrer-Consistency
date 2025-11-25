@@ -213,7 +213,10 @@ const App: React.FC = () => {
       </header>
 
       <main className="flex-1 flex flex-col">
-        <StepIndicator currentStep={state.step} />
+        <StepIndicator 
+          currentStep={state.step} 
+          onStepClick={(step) => updateState({ step })}
+        />
 
         <div className="flex-1 px-4 py-6 w-full max-w-7xl mx-auto animate-in fade-in duration-500">
           
