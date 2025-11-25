@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from './lib/supabase';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Auth } from './components/Auth';
 import { AppState, AppStep, INITIAL_STATE, Character, Placement } from './types';
 import { StepIndicator } from './components/StepIndicator';
@@ -10,7 +10,7 @@ import { CompositionCanvas } from './components/CompositionCanvas';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { Button } from './components/Button';
 import { generateComposite, upscaleImage, generateAnimation } from './services/geminiService';
-import { ArrowLeft, Download, RefreshCw, Sparkles, Check, LogOut, Video } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Sparkles, Check, LogOut, Video, AlertCircle } from 'lucide-react';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -158,6 +158,51 @@ const App: React.FC = () => {
       cleanBgRef.current = null;
     }
   };
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-red-500/10 rounded-lg">
+              <AlertCircle size={32} className="text-red-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white">Configuration Required</h2>
+          </div>
+
+          <div className="space-y-4 text-slate-300">
+            <p className="text-lg">
+              Supabase environment variables are not configured. Please set the following environment variables:
+            </p>
+
+            <div className="bg-slate-900 p-4 rounded-lg border border-slate-700 font-mono text-sm">
+              <div className="text-indigo-400">VITE_SUPABASE_URL</div>
+              <div className="text-indigo-400">VITE_SUPABASE_ANON_KEY</div>
+            </div>
+
+            <div className="mt-6 p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-lg">
+              <p className="text-sm font-semibold text-indigo-300 mb-2">For Vercel deployments:</p>
+              <ol className="text-sm space-y-1 list-decimal list-inside text-slate-300">
+                <li>Go to your Vercel project settings</li>
+                <li>Navigate to Environment Variables</li>
+                <li>Add both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY</li>
+                <li>Redeploy your application</li>
+              </ol>
+            </div>
+
+            <div className="mt-4 p-4 bg-slate-700/50 border border-slate-600 rounded-lg">
+              <p className="text-sm font-semibold text-slate-200 mb-2">For local development:</p>
+              <ol className="text-sm space-y-1 list-decimal list-inside text-slate-300">
+                <li>Create a <code className="px-1 py-0.5 bg-slate-800 rounded">.env.local</code> file in your project root</li>
+                <li>Add your Supabase credentials to the file</li>
+                <li>Restart your development server</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loadingSession) {
     return (

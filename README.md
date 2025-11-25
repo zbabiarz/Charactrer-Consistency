@@ -17,11 +17,14 @@ View your app in AI Studio: https://ai.studio/apps/drive/1yB5itmUE-9F6A-z2welldR
    npm install
    ```
 
-2. Create a `.env.local` file and add your Gemini API key:
+2. Create a `.env.local` file and add your environment variables:
    ```bash
    cp .env.example .env.local
    ```
-   Then edit `.env.local` and set your `GEMINI_API_KEY` (get one from https://aistudio.google.com/app/apikey)
+   Then edit `.env.local` and set:
+   - `GEMINI_API_KEY` (get one from https://aistudio.google.com/app/apikey)
+   - `VITE_SUPABASE_URL` (from your Supabase project settings)
+   - `VITE_SUPABASE_ANON_KEY` (from your Supabase project settings)
 
 3. Run the app:
    ```bash
@@ -32,5 +35,8 @@ View your app in AI Studio: https://ai.studio/apps/drive/1yB5itmUE-9F6A-z2welldR
 
 1. Push your code to GitHub
 2. Import your repository in Vercel
-3. Add the `GEMINI_API_KEY` environment variable in your Vercel project settings
+3. Add the following environment variables in your Vercel project settings:
+   - `GEMINI_API_KEY`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 4. Deploy!
