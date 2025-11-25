@@ -70,7 +70,7 @@ export const BackgroundSetup: React.FC<Props> = ({ currentImage, onConfirm, setP
 
   return (
     <div className="w-full max-w-5xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4 text-center">Step 3: Set the Scene</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">Step 2: Set the Scene</h2>
       <p className="text-slate-400 text-center mb-8">
         Upload an existing background or describe a new world for your character.
       </p>

@@ -66,69 +66,17 @@ const App: React.FC = () => {
     nextStep();
   };
 
+  const layoutGuideRef = React.useRef<string | null>(null);
+  const cleanBgRef = React.useRef<string | null>(null);
+
   const handleCompositeReady = async (cleanBg: string, layoutGuide: string, placements: Placement[]) => {
-    if (state.characters.length === 0) return;
-
-    // Save placements so we can re-use them for regeneration
-    updateState({ 
-      placements: placements,
-      isProcessing: true,
-      error: null,
-      generatedImages: [],
-      selectedImageIndex: 0,
-      upscaledImage: null
-    });
-
-    try {
-      // Initial generation: default count 1, no refinement
-      const resultImages = await generateComposite(
-        state.characters,
-        cleanBg,
-        layoutGuide,
-        placements,
-        1,
-        ""
-      );
-      updateState({ generatedImages: resultImages, step: AppStep.RESULT });
-    } catch (err: any) {
-      updateState({ error: err.message || "Failed to generate image." });
-    } finally {
-      updateState({ isProcessing: false });
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (!state.backgroundImage) return;
-    
-    // We need to re-create the layout guide context. 
-    // Ideally we stored the 'cleanBg' and 'layoutGuide' strings, but we only stored placements.
-    // However, the `CompositionCanvas` passed them to `handleCompositeReady`.
-    // In a real app, we should store `cleanBackground` and `layoutGuide` in AppState if we want to reuse them exactly.
-    // Since `backgroundImage` in state IS the clean background, we just need the layout guide.
-    // Current Architecture Limitation: The Layout Guide (drawn boxes) was transient in Canvas.
-    // FIX: We need to assume the user hasn't left the flow where data is available or we need to change how we store it.
-    // For now, let's assume we can't regenerate without the layout guide image.
-    // OPTION: We will prevent regeneration if we don't have the layout guide data. 
-    // BUT the user asked for this feature.
-    // WORKAROUND: We will trigger the regeneration using the data we DO have. 
-    // Since we don't have the `layoutGuide` image string stored, we'll prompt the user they need to go back? 
-    // NO, let's store the `layoutGuideBlob` in state when `handleCompositeReady` is called.
-    
-    // NOTE: To fix this properly without changing too many files, I will use the `generatedComposite` function 
-    // but I need the `layoutGuide` image. 
-    // Let's add `layoutGuideImage` to AppState to support regeneration.
-  };
-
-  // Redefine handleCompositeReady to store layoutGuide
-  const handleCompositeReadyWithStorage = async (cleanBg: string, layoutGuide: string, placements: Placement[]) => {
       // Store the layout guide for regeneration
-      // We will treat `backgroundImage` as the cleanBg source of truth.
-      // We'll use a hidden way to store layoutGuide or just accept we pass it here.
-      
-      // Let's execute the generation immediately here
       if (state.characters.length === 0) return;
 
-      updateState({ 
+      layoutGuideRef.current = layoutGuide;
+      cleanBgRef.current = cleanBg;
+
+      updateState({
         placements,
         isProcessing: true,
         error: null,
@@ -136,20 +84,6 @@ const App: React.FC = () => {
         selectedImageIndex: 0,
         upscaledImage: null
       });
-
-      // Define a local regenerator function that closes over these specific image blobs
-      // We'll attach this to a ref or just call it now. 
-      // To support the UI button calling it later, we really should store these blobs in state.
-      // Since I can only update App.tsx and types.ts easily, let's add `layoutGuideImage` to state.
-      // I'll add `layoutGuideImage` to state via the `updateState` call implicitly by extending the type locally or just adding it to State.
-      // I added `generatedImages` to type, let's assume I can add `layoutGuideImage` to AppState in the same file change.
-      // Wait, I already outputted types.ts. I should have added `layoutGuideImage` there.
-      // Let's look at the `types.ts` change I generated. I did NOT add `layoutGuideImage`.
-      // I should add it now.
-      
-      // Actually, I can allow the `App` component to hold this in a `useRef` to avoid re-renders or cluttering state types if not strictly needed for UI.
-      layoutGuideRef.current = layoutGuide;
-      cleanBgRef.current = cleanBg;
 
       try {
         const resultImages = await generateComposite(state.characters, cleanBg, layoutGuide, placements, 1, "");
@@ -160,9 +94,6 @@ const App: React.FC = () => {
         updateState({ isProcessing: false });
       }
   };
-
-  const layoutGuideRef = React.useRef<string | null>(null);
-  const cleanBgRef = React.useRef<string | null>(null);
 
   const performRegeneration = async () => {
     if (!layoutGuideRef.current || !cleanBgRef.current) {
@@ -311,10 +242,10 @@ const App: React.FC = () => {
               <Button variant="outline" onClick={prevStep} className="self-start">
                 <ArrowLeft size={16} /> Back
               </Button>
-              <CompositionCanvas 
+              <CompositionCanvas
                 backgroundSrc={state.backgroundImage}
                 characters={state.characters}
-                onCompositeReady={handleCompositeReadyWithStorage}
+                onCompositeReady={handleCompositeReady}
               />
             </div>
           )}
