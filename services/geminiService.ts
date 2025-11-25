@@ -1,6 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { ArtStyle, AspectRatio, Character, Placement } from "../types";
+import { getGeminiApiKey } from "../config/gemini";
 
 // Helper to remove data URL prefix
 const stripBase64Header = (dataUrl: string) => {
@@ -8,11 +9,8 @@ const stripBase64Header = (dataUrl: string) => {
 };
 
 export const generateBackground = async (prompt: string, aspectRatio: AspectRatio, count: number = 1): Promise<string[]> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getGeminiApiKey();
+  const ai = new GoogleGenAI({ apiKey });
   
   const promises = Array.from({ length: count }).map(() => 
     ai.models.generateContent({
@@ -59,11 +57,8 @@ export const generateComposite = async (
   count: number = 1,
   refinement: string = ""
 ): Promise<string[]> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getGeminiApiKey();
+  const ai = new GoogleGenAI({ apiKey });
 
   // Construct placement instructions
   let placementInstructions = "";
@@ -153,11 +148,8 @@ export const generateComposite = async (
 };
 
 export const upscaleImage = async (imageBase64: string): Promise<string> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = getGeminiApiKey();
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
     Upscale this image to 2K resolution.
@@ -198,4 +190,44 @@ export const upscaleImage = async (imageBase64: string): Promise<string> => {
   }
 
   return upscaled;
+};
+
+export const generateAnimation = async (imageBase64: string): Promise<string> => {
+  const apiKey = getGeminiApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+
+  const prompt = "Animate this scene naturally. Keep the characters and background consistent. Add subtle movement to characters and environment.";
+
+  // Using Veo model for video generation
+  const response = await ai.models.generateContent({
+    model: 'veo-2.0-generate-uhd-video',
+    contents: {
+      parts: [
+        { text: prompt },
+        { inlineData: { mimeType: 'image/png', data: stripBase64Header(imageBase64) } }
+      ]
+    }
+  });
+
+  let videoUrl = "";
+  if (response.candidates && response.candidates[0].content.parts) {
+    for (const part of response.candidates[0].content.parts) {
+      // Check for video uri or inline data
+      if (part.fileData && part.fileData.fileUri) {
+        videoUrl = part.fileData.fileUri;
+        break;
+      }
+      // Fallback for inline data if supported
+      if (part.inlineData && part.inlineData.data) {
+        videoUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        break;
+      }
+    }
+  }
+
+  if (!videoUrl) {
+    throw new Error("Animation generation failed. No video returned.");
+  }
+
+  return videoUrl;
 };

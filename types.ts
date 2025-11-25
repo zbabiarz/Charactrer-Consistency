@@ -47,8 +47,10 @@ export interface AppState {
   generatedImages: string[]; // Array of Base64 results
   selectedImageIndex: number;
   upscaledImage: string | null; // Base64
+  animatedVideo: string | null; // Base64 or URL
   
   isProcessing: boolean;
+  isAnimating: boolean;
   error: string | null;
 }
 
@@ -60,6 +62,8 @@ export const INITIAL_STATE: AppState = {
   generatedImages: [],
   selectedImageIndex: 0,
   upscaledImage: null,
+  animatedVideo: null,
   isProcessing: false,
+  isAnimating: false,
   error: null,
 };

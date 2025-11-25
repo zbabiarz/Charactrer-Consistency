@@ -5,9 +5,10 @@ import { User, Image as ImageIcon, Move, CheckCircle } from 'lucide-react';
 
 interface StepIndicatorProps {
   currentStep: AppStep;
+  onStepClick: (step: AppStep) => void;
 }
 
-export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
+export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, onStepClick }) => {
   const steps = [
     { id: AppStep.UPLOAD_CHARACTER, label: 'Characters', icon: User },
     { id: AppStep.BACKGROUND_SETUP, label: 'Background', icon: ImageIcon },

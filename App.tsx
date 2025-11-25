@@ -1,5 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
+import { Auth } from './components/Auth';
 import { AppState, AppStep, INITIAL_STATE, Character, Placement } from './types';
 import { StepIndicator } from './components/StepIndicator';
 import { CharacterUploader } from './components/CharacterUploader';
@@ -7,12 +9,34 @@ import { BackgroundSetup } from './components/BackgroundSetup';
 import { CompositionCanvas } from './components/CompositionCanvas';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { Button } from './components/Button';
-import { generateComposite, upscaleImage } from './services/geminiService';
-import { ArrowLeft, Download, RefreshCw, Sparkles, Check } from 'lucide-react';
+import { generateComposite, upscaleImage, generateAnimation } from './services/geminiService';
+import { ArrowLeft, Download, RefreshCw, Sparkles, Check, LogOut, Video } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [session, setSession] = useState<any>(null);
+  const [loadingSession, setLoadingSession] = useState(true);
   const [state, setState] = useState<AppState>(INITIAL_STATE);
   
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoadingSession(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setState(INITIAL_STATE);
+  };
+
   // Local state for regeneration inputs in the Result view
   const [regenPrompt, setRegenPrompt] = useState("");
   const [regenQuantity, setRegenQuantity] = useState(1);
@@ -110,6 +134,21 @@ const App: React.FC = () => {
     }
   };
 
+  const handleAnimate = async () => {
+    const currentImage = state.upscaledImage || state.generatedImages[state.selectedImageIndex];
+    if (!currentImage) return;
+
+    updateState({ isAnimating: true, error: null });
+    try {
+        const videoUrl = await generateAnimation(currentImage);
+        updateState({ animatedVideo: videoUrl });
+    } catch (err: any) {
+        updateState({ error: "Animation failed: " + err.message });
+    } finally {
+        updateState({ isAnimating: false });
+    }
+  };
+
   const resetApp = () => {
     if (window.confirm("Start over? All progress will be lost.")) {
       setState(INITIAL_STATE);
@@ -120,9 +159,21 @@ const App: React.FC = () => {
     }
   };
 
+  if (loadingSession) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <LoadingOverlay />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Auth onAuthSuccess={() => {}} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-50 flex flex-col">
-      {state.isProcessing && <LoadingOverlay />}
+      {(state.isProcessing || state.isAnimating) && <LoadingOverlay />}
 
       {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-40">
@@ -135,11 +186,20 @@ const App: React.FC = () => {
               CharaPlace
             </h1>
           </div>
-          {state.step > AppStep.UPLOAD_CHARACTER && (
-            <button onClick={resetApp} className="text-xs text-slate-500 hover:text-white transition-colors">
-              Reset Project
+          <div className="flex items-center gap-4">
+            {state.step > AppStep.UPLOAD_CHARACTER && (
+              <button onClick={resetApp} className="text-xs text-slate-500 hover:text-white transition-colors">
+                Reset Project
+              </button>
+            )}
+            <button 
+              onClick={handleLogout}
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+              title="Sign Out"
+            >
+              <LogOut size={20} />
             </button>
-          )}
+          </div>
         </div>
       </header>
 
@@ -273,33 +333,62 @@ const App: React.FC = () => {
               {/* Right Column: Main Preview */}
               <div className="lg:col-span-8 flex flex-col gap-4 order-1 lg:order-2">
                 <div className="relative group bg-slate-900 rounded-2xl overflow-hidden border border-slate-700 shadow-2xl">
-                   {/* Main Image Display */}
-                   <img 
-                      src={state.upscaledImage || state.generatedImages[state.selectedImageIndex]} 
-                      alt="Result" 
-                      className="w-full h-auto max-h-[70vh] object-contain mx-auto"
-                   />
-                   
-                   {/* Upscale Badge */}
-                   {state.upscaledImage && (
-                     <div className="absolute top-4 left-4 bg-indigo-600/90 backdrop-blur text-white px-3 py-1 rounded-full text-xs font-bold border border-indigo-400 shadow-lg flex items-center gap-2">
-                       <Sparkles size={12} /> 2K UPSCALED
-                     </div>
+                   {/* Main Display */}
+                   {state.animatedVideo ? (
+                     <video 
+                       src={state.animatedVideo} 
+                       controls 
+                       autoPlay 
+                       loop 
+                       className="w-full h-auto max-h-[70vh] object-contain mx-auto"
+                     />
+                   ) : (
+                     <img 
+                        src={state.upscaledImage || state.generatedImages[state.selectedImageIndex]} 
+                        alt="Result" 
+                        className="w-full h-auto max-h-[70vh] object-contain mx-auto"
+                     />
                    )}
+                   
+                   {/* Badges */}
+                   <div className="absolute top-4 left-4 flex flex-col gap-2">
+                     {state.upscaledImage && !state.animatedVideo && (
+                       <div className="bg-indigo-600/90 backdrop-blur text-white px-3 py-1 rounded-full text-xs font-bold border border-indigo-400 shadow-lg flex items-center gap-2">
+                         <Sparkles size={12} /> 2K UPSCALED
+                       </div>
+                     )}
+                     {state.animatedVideo && (
+                       <div className="bg-purple-600/90 backdrop-blur text-white px-3 py-1 rounded-full text-xs font-bold border border-purple-400 shadow-lg flex items-center gap-2">
+                         <Video size={12} /> ANIMATED
+                       </div>
+                     )}
+                   </div>
 
                    {/* Toolbar */}
                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="flex gap-3">
-                        {!state.upscaledImage && (
-                          <Button 
-                            variant="primary" 
-                            className="shadow-lg !py-2"
-                            onClick={handleUpscale}
-                          >
-                             <Sparkles size={16} /> Upscale to 2K
-                          </Button>
+                        {!state.animatedVideo && (
+                          <>
+                            {!state.upscaledImage && (
+                              <Button 
+                                variant="primary" 
+                                className="shadow-lg !py-2"
+                                onClick={handleUpscale}
+                              >
+                                 <Sparkles size={16} /> Upscale to 2K
+                              </Button>
+                            )}
+                            <Button 
+                              variant="primary" 
+                              className="shadow-lg !py-2 bg-purple-600 hover:bg-purple-700 border-purple-500"
+                              onClick={handleAnimate}
+                            >
+                               <Video size={16} /> Animate
+                            </Button>
+                          </>
                         )}
-                        {state.upscaledImage && (
+                        
+                        {state.upscaledImage && !state.animatedVideo && (
                           <Button 
                             variant="secondary" 
                             className="shadow-lg !py-2 text-xs"
@@ -308,11 +397,21 @@ const App: React.FC = () => {
                              Show Original
                           </Button>
                         )}
+
+                        {state.animatedVideo && (
+                          <Button 
+                            variant="secondary" 
+                            className="shadow-lg !py-2 text-xs"
+                            onClick={() => updateState({ animatedVideo: null })}
+                          >
+                             Show Image
+                          </Button>
+                        )}
                       </div>
 
                       <a 
-                        href={state.upscaledImage || state.generatedImages[state.selectedImageIndex]} 
-                        download={`charaplace-${state.upscaledImage ? '2k' : 'draft'}-${Date.now()}.png`}
+                        href={state.animatedVideo || state.upscaledImage || state.generatedImages[state.selectedImageIndex]} 
+                        download={`charaplace-${state.animatedVideo ? 'video' : (state.upscaledImage ? '2k' : 'draft')}-${Date.now()}.${state.animatedVideo ? 'mp4' : 'png'}`}
                       >
                         <Button variant="secondary" className="!py-2">
                            <Download size={16} /> Download
@@ -322,9 +421,11 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="text-center text-slate-500 text-sm">
-                   {state.upscaledImage 
-                     ? "Viewing 2K Upscaled Image. Download to see full quality."
-                     : "Viewing Draft Preview. Upscale for final 2K resolution."}
+                   {state.animatedVideo
+                     ? "Viewing Generated Animation."
+                     : (state.upscaledImage 
+                         ? "Viewing 2K Upscaled Image. Download to see full quality."
+                         : "Viewing Draft Preview. Upscale for final 2K resolution.")}
                 </div>
               </div>
 
