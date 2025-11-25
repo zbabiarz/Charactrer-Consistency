@@ -1,6 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { ArtStyle, AspectRatio, Character, Placement } from "../types";
+import { getGeminiApiKey } from "../config/gemini";
 
 // Helper to remove data URL prefix
 const stripBase64Header = (dataUrl: string) => {
@@ -8,11 +9,7 @@ const stripBase64Header = (dataUrl: string) => {
 };
 
 export const generateBackground = async (prompt: string, aspectRatio: AspectRatio, count: number = 1): Promise<string[]> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("Gemini API Key is missing. Please add it to your .env file.");
-  }
-
+  const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
   
   const promises = Array.from({ length: count }).map(() => 
@@ -60,11 +57,7 @@ export const generateComposite = async (
   count: number = 1,
   refinement: string = ""
 ): Promise<string[]> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("Gemini API Key is missing. Please add it to your .env file.");
-  }
-
+  const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
   // Construct placement instructions
@@ -155,11 +148,7 @@ export const generateComposite = async (
 };
 
 export const upscaleImage = async (imageBase64: string): Promise<string> => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("Gemini API Key is missing. Please add it to your .env file.");
-  }
-
+  const apiKey = getGeminiApiKey();
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
