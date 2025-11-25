@@ -22,7 +22,7 @@ export const CharacterUploader: React.FC<Props> = ({ characters, onUpdateCharact
         const reader = new FileReader();
         reader.onloadend = () => {
           newChars.push({
-            id: Math.random().toString(36).substr(2, 9),
+            id: Math.random().toString(36).substring(2, 11),
             image: reader.result as string,
             style: ArtStyle.HYPER_REALISTIC // Default style
           });

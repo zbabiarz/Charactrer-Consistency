@@ -148,7 +148,7 @@ export const CompositionCanvas: React.FC<Props> = ({ backgroundSrc, characters, 
     if (!currentBox || !selectedCharId || !currentAction) return;
     
     const newPlacement: Placement = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       characterId: selectedCharId,
       box: currentBox,
       action: currentAction,
@@ -198,7 +198,7 @@ export const CompositionCanvas: React.FC<Props> = ({ backgroundSrc, characters, 
     <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
       {/* Canvas Area */}
       <div className="flex-1">
-         <h2 className="text-2xl font-bold mb-2">Step 4: Place Characters</h2>
+         <h2 className="text-2xl font-bold mb-2">Step 3: Place Characters</h2>
          <p className="text-slate-400 mb-4 text-sm">
            Draw boxes to place characters. The AI will seamlessly blend them into the clean background.
          </p>
