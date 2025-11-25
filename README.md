@@ -23,10 +23,10 @@ View your app in AI Studio: https://ai.studio/apps/drive/1yB5itmUE-9F6A-z2welldR
    - Open the `.env` file
    - Replace `your_api_key_here` with your actual API key:
      ```
-     VITE_GEMINI_API_KEY=your_actual_api_key_here
+     GEMINI_API_KEY=your_actual_api_key_here
      ```
 
-   **In Bolt.new:** You can also add the API key via Settings → Secrets → Add `VITE_GEMINI_API_KEY`
+   **In Bolt.new:** You can also add the API key via Settings → Secrets → Add `GEMINI_API_KEY`
 
 3. Run the app:
    ```bash
@@ -46,6 +46,6 @@ View your app in AI Studio: https://ai.studio/apps/drive/1yB5itmUE-9F6A-z2welldR
 
 Required environment variables in `.env`:
 
-- `VITE_GEMINI_API_KEY` - Your Gemini API key from Google AI Studio
+- `GEMINI_API_KEY` - Your Gemini API key from Google AI Studio
 - `VITE_SUPABASE_URL` - Supabase project URL (pre-configured)
 - `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key (pre-configured)
