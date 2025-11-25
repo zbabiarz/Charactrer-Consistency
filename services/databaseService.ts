@@ -3,6 +3,7 @@ import { Character, Placement } from '../types';
 
 export interface Project {
   id: string;
+  user_id?: string;
   name: string;
   created_at: string;
   updated_at: string;
@@ -19,9 +20,14 @@ export interface Composition {
 }
 
 export const createProject = async (name: string = 'Untitled Project'): Promise<Project> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
   const { data, error } = await supabase
     .from('projects')
-    .insert({ name })
+    .insert({ 
+      name,
+      user_id: user?.id 
+    })
     .select()
     .maybeSingle();
 

@@ -1,5 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
+import { Auth } from './components/Auth';
 import { AppState, AppStep, INITIAL_STATE, Character, Placement } from './types';
 import { StepIndicator } from './components/StepIndicator';
 import { CharacterUploader } from './components/CharacterUploader';
@@ -8,11 +10,33 @@ import { CompositionCanvas } from './components/CompositionCanvas';
 import { LoadingOverlay } from './components/LoadingOverlay';
 import { Button } from './components/Button';
 import { generateComposite, upscaleImage } from './services/geminiService';
-import { ArrowLeft, Download, RefreshCw, Sparkles, Check } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw, Sparkles, Check, LogOut } from 'lucide-react';
 
 const App: React.FC = () => {
+  const [session, setSession] = useState<any>(null);
+  const [loadingSession, setLoadingSession] = useState(true);
   const [state, setState] = useState<AppState>(INITIAL_STATE);
   
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoadingSession(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setState(INITIAL_STATE);
+  };
+
   // Local state for regeneration inputs in the Result view
   const [regenPrompt, setRegenPrompt] = useState("");
   const [regenQuantity, setRegenQuantity] = useState(1);
@@ -189,6 +213,18 @@ const App: React.FC = () => {
     }
   };
 
+  if (loadingSession) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <LoadingOverlay />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Auth onAuthSuccess={() => {}} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-50 flex flex-col">
       {state.isProcessing && <LoadingOverlay />}
@@ -204,19 +240,25 @@ const App: React.FC = () => {
               CharaPlace
             </h1>
           </div>
-          {state.step > AppStep.UPLOAD_CHARACTER && (
-            <button onClick={resetApp} className="text-xs text-slate-500 hover:text-white transition-colors">
-              Reset Project
+          <div className="flex items-center gap-4">
+            {state.step > AppStep.UPLOAD_CHARACTER && (
+              <button onClick={resetApp} className="text-xs text-slate-500 hover:text-white transition-colors">
+                Reset Project
+              </button>
+            )}
+            <button 
+              onClick={handleLogout}
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+              title="Sign Out"
+            >
+              <LogOut size={20} />
             </button>
-          )}
+          </div>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col">
-        <StepIndicator 
-          currentStep={state.step} 
-          onStepClick={(step) => updateState({ step })}
-        />
+        <StepIndicator currentStep={state.step} />
 
         <div className="flex-1 px-4 py-6 w-full max-w-7xl mx-auto animate-in fade-in duration-500">
           
