@@ -1,0 +1,5 @@
+{
+  "name": "CharaPlace AI",
+  "description": "Maintain character consistency while placing them into custom backgrounds with specific poses and styles.",
+  "requestFramePermissions": []
+}
