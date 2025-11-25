@@ -8,11 +8,12 @@ const stripBase64Header = (dataUrl: string) => {
 };
 
 export const generateBackground = async (prompt: string, aspectRatio: AspectRatio, count: number = 1): Promise<string[]> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing.");
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API Key is missing. Please add it to your .env file.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   
   const promises = Array.from({ length: count }).map(() => 
     ai.models.generateContent({
@@ -59,11 +60,12 @@ export const generateComposite = async (
   count: number = 1,
   refinement: string = ""
 ): Promise<string[]> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing.");
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API Key is missing. Please add it to your .env file.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   // Construct placement instructions
   let placementInstructions = "";
@@ -153,11 +155,12 @@ export const generateComposite = async (
 };
 
 export const upscaleImage = async (imageBase64: string): Promise<string> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key is missing.");
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API Key is missing. Please add it to your .env file.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
     Upscale this image to 2K resolution.
